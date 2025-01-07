@@ -1,0 +1,80 @@
+﻿@page "/CarDetails/{vin}"
+@using Microsoft.AspNetCore.Authorization
+@using TGU.Data
+@inject UserService UserService
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@attribute [Authorize(Roles = "Admin, Mechanic")]
+@rendermode InteractiveServer
+
+<h3>Car Details</h3>
+
+@if (car == null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <div>
+        <p><strong>VIN:</strong> @car.Vin</p>
+        <p><strong>Owner Email:</strong> @car.OwnerEmail</p>
+        <p><strong>Plate:</strong> @car.Plate</p>
+        <p><strong>Make:</strong> @car.Make</p>
+        <p><strong>Model:</strong> @car.Model</p>
+        <p><strong>Year:</strong> @car.Year</p>
+        <p>
+            <strong>Status: </strong>
+            @if (currentUserPermission == "Admin" || car.AssignedTo == currentUserEmail)
+            {
+                <select @onchange="(e) => ChangeCarStatus(e.Value.ToString())">
+                    <option value="drop-off" selected="@((car.Status == "drop-off") ? "selected" : null)">drop-off</option>
+                    <option value="diagnose" selected="@((car.Status == "diagnose") ? "selected" : null)">diagnose</option>
+                    <option value="repairing" selected="@((car.Status == "repairing") ? "selected" : null)">repairing</option>
+                    <option value="ready" selected="@((car.Status == "ready") ? "selected" : null)">ready</option>
+                    <option value="picked-up" selected="@((car.Status == "picked-up") ? "selected" : null)">picked-up</option>
+                </select>
+            }
+            else
+            {
+                @car.Status
+            }
+        </p>
+        <p><strong>Assigned To:</strong> @GetMechanicFullName(car.AssignedTo)</p>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public string vin { get; set; }
+    private string currentUserEmail = "";
+    private string currentUserPermission = "";
+
+    private Car car;
+    private List<ApplicationUser> users;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        if (user.Identity.IsAuthenticated)
+        {
+            currentUserEmail = user.Identity.Name;
+            currentUserPermission = await UserService.GetUserPermissionByEmailAsync(currentUserEmail);
+        }
+        car = await UserService.GetCarByVinAsync(vin);
+        users = await UserService.GetAllUsersAsync();
+    }
+
+    private string GetMechanicFullName(string mechanicEmail)
+    {
+        var mechanicFullName = "";
+        var user = users.FirstOrDefault(u => u.Email == mechanicEmail);
+        mechanicFullName = user?.FirstName + " " + user?.LastName;
+        return mechanicFullName;
+    }
+
+    private async Task ChangeCarStatus(string newStatus)
+    {
+        car.Status = newStatus;
+        await UserService.UpdateCarStatusAsync(car);
+    }
+}

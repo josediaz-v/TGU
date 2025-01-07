@@ -1,0 +1,73 @@
+﻿@page "/MyCars"
+@using Microsoft.AspNetCore.Authorization
+@using TGU.Data
+@inject UserService UserService
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@attribute [Authorize(Roles = "Customer")]
+
+<h3>Cars</h3>
+
+@if (cars == null)
+{
+    <p>Loading...</p>
+}
+else if (!cars.Any())
+{
+    <p>No cars available for @currentUserEmail.</p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>VIN</th>
+                <th>Plate</th>
+                <th>Make</th>
+                <th>Model</th>
+                <th>Year</th>
+                <th>Assigned To</th>
+                <th>Car Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var car in cars)
+            {
+                <tr>
+                    <td>@car.Vin</td>
+                    <td>@car.Plate</td>
+                    <td>@car.Make</td>
+                    <td>@car.Model</td>
+                    <td>@car.Year</td>
+                    <td>@GetMechanicFullName(car.AssignedTo)</td>
+                    <td>@car.Status</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<Car> cars;
+    private List<ApplicationUser> mechanics;
+    private string currentUserEmail = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        if (user.Identity.IsAuthenticated)
+        {
+            currentUserEmail = user.Identity.Name;
+        }
+        cars = await UserService.GetCarsByOwnerAsync(currentUserEmail);
+        mechanics = await UserService.GetAllMechanicsAsync();
+    }
+
+    private string GetMechanicFullName(string mechanicEmail)
+    {
+        var mechanicFullName = "";
+        var mechanic = mechanics.FirstOrDefault(u => u.Email == mechanicEmail);
+        mechanicFullName = mechanic?.FirstName + " " + mechanic?.LastName;
+        return mechanicFullName;
+    }
+}

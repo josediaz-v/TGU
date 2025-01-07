@@ -1,7 +1,8 @@
 ﻿@page "/Cars"
+@using Microsoft.AspNetCore.Authorization
 @using TGU.Data
-
 @inject UserService UserService
+@attribute [Authorize(Roles = "Admin, Mechanic")]
 
 <h3>Cars</h3>
 
@@ -19,9 +20,9 @@ else
         <thead>
             <tr>
                 <th>VIN</th>
-                <th>Owner Full Name</th>
+                @*<th>Owner Full Name</th>
                 <th>Phone Number</th>
-                <th>Email</th>
+                <th>Email</th>*@
                 <th>Plate</th>
                 <th>Make</th>
                 <th>Model</th>
@@ -34,10 +35,10 @@ else
             @foreach (var car in cars)
             {
                 <tr>
-                    <td>@car.Vin</td>
-                    <td>@GetOwnerFullName(car.OwnerEmail)</td>
+                    <td><NavLink href="@($"/CarDetails/{car.Vin}")">@car.Vin</NavLink></td>
+                    @*<td>@GetOwnerFullName(car.OwnerEmail)</td>
                     <td>@GetOwnerPhoneNumber(car.OwnerEmail)</td>
-                    <td>@car.OwnerEmail</td>
+                    <td>@car.OwnerEmail</td>*@
                     <td>@car.Plate</td>
                     <td>@car.Make</td>
                     <td>@car.Model</td>

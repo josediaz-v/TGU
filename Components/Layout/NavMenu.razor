@@ -26,13 +26,17 @@
                 </div>
             </Authorized>
         </AuthorizeView>
-        <AuthorizeView Roles="Admin, Mechanic">
+        <AuthorizeView Roles="Customer">
             <Authorized>
                 <div class="nav-item px-3">
-                    <NavLink class="nav-link" href="Account/Register">
-                        <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Register User
+                    <NavLink class="nav-link" href="MyCars">
+                        <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> My Cars
                     </NavLink>
                 </div>
+            </Authorized>
+        </AuthorizeView>
+        <AuthorizeView Roles="Admin, Mechanic">
+            <Authorized>
                 <div class="nav-item px-3">
                     <NavLink class="nav-link" href="Cars">
                         <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Cars List
@@ -40,24 +44,29 @@
                 </div>
             </Authorized>
         </AuthorizeView>
-        @*<div class="nav-item px-3">
-            <NavLink class="nav-link" href="counter">
-                <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Counter
-            </NavLink>
-        </div>
-
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="weather">
-                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Weather
-            </NavLink>
-        </div>
-        
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="auth">
-                <span class="bi bi-lock-nav-menu" aria-hidden="true"></span> Auth Required
-            </NavLink>
-        </div>*@
-
+        <AuthorizeView Roles="Admin">
+            <Authorized>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="Customers">
+                        <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Customers List
+                    </NavLink>
+                </div>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="Mechanics">
+                        <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Mechanics List
+                    </NavLink>
+                </div>
+            </Authorized>
+        </AuthorizeView>
+        <AuthorizeView Roles="Admin, Mechanic">
+            <Authorized>
+                <div class="nav-item px-3">
+                    <NavLink class="nav-link" href="Account/Register">
+                        <span class="bi bi-person-nav-menu" aria-hidden="true"></span> Register User
+                    </NavLink>
+                </div>
+            </Authorized>
+        </AuthorizeView>
         <AuthorizeView>
             <Authorized>
                 <div class="nav-item px-3">

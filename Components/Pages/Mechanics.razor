@@ -1,0 +1,75 @@
+﻿@page "/Mechanics"
+@using Microsoft.AspNetCore.Authorization
+@using TGU.Data
+@inject UserService UserService
+@attribute [Authorize(Roles = "Admin")]
+
+<h3>Mechanics</h3>
+
+@if (mechanics == null)
+{
+    <p>Loading...</p>
+}
+else if (!mechanics.Any())
+{
+    <p>No mechanics available.</p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>First Name</th>
+                <th>Last Name</th>
+                <th>Phone Number</th>
+                <th>Email</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var customer in mechanics)
+            {
+                <tr>
+                    <td>@customer.FirstName</td>
+                    <td>@customer.LastName</td>
+                    <td>@customer.PhoneNumber</td>
+                    <td>@customer.Email</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    //private List<ApplicationUser> cars;
+    private List<ApplicationUser> mechanics;
+
+    protected override async Task OnInitializedAsync()
+    {
+        //cars = await UserService.GetAllCarsAsync();
+        mechanics = await UserService.GetAllMechanicsAsync();
+    }
+
+    @*private string GetOwnerFullName(string userEmail)
+    {
+        var userFullName = "";
+        var user = mechanics.FirstOrDefault(u => u.Email == userEmail);
+        userFullName = user?.FirstName + " " + user?.LastName;
+        return userFullName;
+    }
+
+    private string GetOwnerPhoneNumber(string userEmail)
+    {
+        var userPhoneNumber = "";
+        var user = mechanics.FirstOrDefault(u => u.Email == userEmail);
+        userPhoneNumber = user?.PhoneNumber;
+        return userPhoneNumber;
+    }
+
+    private string GetMechanicFullName(string mechanicEmail)
+    {
+        var mechanicFullName = "";
+        var user = mechanics.FirstOrDefault(u => u.Email == mechanicEmail);
+        mechanicFullName = user?.FirstName + " " + user?.LastName;
+        return mechanicFullName;
+    }*@
+}
