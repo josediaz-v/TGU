@@ -1,0 +1,266 @@
+﻿@page "/RegisterCar"
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.EntityFrameworkCore
+@using TGU.Data
+@inject UserService UserService
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@rendermode InteractiveServer
+
+<h3>Search User by Email</h3>
+<EditForm Model="@userModel" method="post" OnValidSubmit="SearchUser" FormName="UserSearchForm">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+    <fieldset class="mb-3">
+        <legend>Customer Information</legend>
+        <label class="form-label" for="userName">Name:</label>
+        <InputText id="userName" type="text" @bind-value="userName" readonly />
+
+        <label class="form-label" for="userPhone">Contact Number:</label>
+        <InputText id="userPhone" type="text" @bind-value="userModel.PhoneNumber" />
+
+        <label class="form-label" for="userEmail">Email:</label>
+        <InputText id="userEmail" type="email" @bind-value="userModel.Email" />
+
+        <button type="submit" class="btn btn-primary">Search Customer</button>
+        <button class="btn btn-primary" @onclick="ClearUserDetails">Clear</button>
+    </fieldset>
+</EditForm>
+@if (!string.IsNullOrEmpty(userName))
+{
+    <EditForm Model="@userModel" method="post" OnValidSubmit="FetchCarData" FormName="CarSearchForm">
+        <fieldset class="mb-3">
+            <legend>Car Model</legend>
+            <input id="carModel" type="text" @bind="carModel" placeholder="Enter car model" />
+            <!-- Button to Fetch Car Info -->
+            <button type="submit" class="btn btn-primary">Get Car Info</button>
+        </fieldset>
+    </EditForm>
+}
+
+@if (carFound)
+{
+    <EditForm Model="@car" method="post" OnValidSubmit="SubmitForm" FormName="CarRegistrationForm">
+        <DataAnnotationsValidator />
+        <!-- Car Details -->
+        <fieldset class="mb-3">
+            <legend>Car Details</legend>
+
+            <label>VIN:</label>
+            <input type="text" @bind="car.Vin" id="vin" />
+            <ValidationMessage For="@(() => car.Vin)" />
+
+            <label>Plate:</label>
+            <input type="text" @bind="car.Plate" id="plate" />
+            <ValidationMessage For="@(() => car.Plate)" />
+
+            <label>Make:</label>
+            <input type="text" @bind="car.Make" id="make" readonly />
+
+            <label>Model:</label>
+            <input type="text" @bind="car.Model" id="model" readonly />
+
+            <label>Class:</label>
+            <input @bind="car.CarClass" id="class" readonly />
+
+            <label>Year:</label>
+            <input type="text" @bind="car.Year" id="year" />
+            <ValidationMessage For="@(() => car.Year)" />
+
+            <label>Transmission:</label>
+            <label class="radio">
+                <input type="radio" value="Manual" name="transmission"
+                       @onchange="(e) => car.Transmission = e.Value.ToString()" id="transmission" />Manual
+            </label>
+            <label class="radio">
+                <input type="radio" value="Automatic" name="transmission"
+                       @onchange="(e) => car.Transmission = e.Value.ToString()" id="transmission" />Auto
+            </label>
+            <ValidationMessage For="@(() => car.Transmission)" />
+
+            <label>Drive:</label>
+            <input @bind="car.Drive" id="drive" />
+
+            <label>Cylinders:</label>
+            <input @bind="car.Cylinders" id="cylinders" />
+        </fieldset>
+
+        <AuthorizeView Roles="Admin">
+            <Authorized Context="authorizedContext">
+                <div class="form-floating mb-3">
+                    <InputSelect @bind-Value="car.AssignedTo" id="assignedTo" class="form-control">
+                        <option value="">Select Mechanic</option>
+                        @foreach (var mechanic in mechanics)
+                        {
+                            <option value="@mechanic.Email">@mechanic.FirstName @mechanic.LastName</option>
+                        }
+                    </InputSelect>
+                    <label for="assignedTo">Assigned To</label>
+                </div>
+            </Authorized>
+            <NotAuthorized Context="notAuthorizedContext">
+                <InputSelect @bind-Value="car.AssignedTo" id="assignedTo" class="form-control" hidden>
+                    <option value="@currentUserEmail">@currentUserEmail</option>
+                </InputSelect>
+                <p>Assigned to @currentUserEmail</p>
+            </NotAuthorized>
+        </AuthorizeView>
+        <button type="submit" class="w-100 btn btn-lg btn-primary">Register</button>
+    </EditForm>
+}
+
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="mt-3 text-danger">
+        <p>@errorMessage</p>
+    </div>
+}
+
+@code {
+    public HttpClient httpClient = new HttpClient();
+    public ApplicationUser userModel { get; set; } = new();
+    public ApplicationUser user = new();
+    public List<Car> cars;
+    public Car car = new Car();
+    public List<ApplicationUser> mechanics = new();
+    private string currentUserEmail = "";
+
+    private string errorMessage = "";
+    private string userName = "";
+    private string carModel = "";
+    private bool carFound = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        mechanics = await UserService.GetAllMechanicsAsync();
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        if (user.Identity.IsAuthenticated)
+        {
+            currentUserEmail = user.Identity.Name;
+        }
+    }
+
+    private async Task SearchUser()
+    {
+        if (!string.IsNullOrEmpty(userModel.PhoneNumber))
+        {
+            try
+            {
+                user = await UserService.GetUserByPhoneAsync(userModel.PhoneNumber);
+
+                if (user == null)
+                {
+                    errorMessage = $"User not found with phone number: {userModel.PhoneNumber}";
+                }
+                else
+                {
+                    userName = $"{user.FirstName} {user.LastName}";
+                    errorMessage = null;
+                }
+            }
+            catch (Exception ex)
+            {
+                errorMessage = $"Error occurred: {ex.Message}";
+            }
+        }
+        else if (!string.IsNullOrEmpty(userModel.Email))
+        {
+            try
+            {
+                user = await UserService.GetUserByEmailAsync(userModel.Email);
+
+                if (user == null)
+                {
+                    errorMessage = $"User not found with email: {userModel.Email}";
+                }
+                else
+                {
+                    userName = $"{user.FirstName} {user.LastName}";
+                    errorMessage = null;
+                }
+            }
+            catch (Exception ex)
+            {
+                errorMessage = $"Error occurred: {ex.Message}";
+            }
+        }
+        else
+        {
+            errorMessage = "Please provide an email or a phone number.";
+        }
+    }
+
+    private async Task FetchCarData()
+    {
+        errorMessage = null; // Reset error message
+
+        try
+        {
+            var url =
+            $"https://api.api-ninjas.com/v1/cars?limit=1&model={carModel}&X-Api-Key=Q1SDa2NmJnkTjhhckFMaBA==i0Wiz2athUnCsjOV"; //
+            @* Use a secure way to handle the API key *@
+            cars = await httpClient.GetFromJsonAsync<List<Car>>(url);
+            if (cars == null || !cars.Any())
+            {
+                errorMessage = "No car found.";
+                //ClearCarDetails();
+            }
+            else
+            {
+                // Populate car details
+                car.Make = cars[0].Make;
+                car.Model = cars[0].Model;
+                car.Year = cars[0].Year;
+                car.Cylinders = cars[0].Cylinders;
+                car.CarClass = cars[0].CarClass;
+                car.Drive = cars[0].Drive;
+                carFound = true;
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message; // Capture any error messages
+            if (ex.InnerException != null)
+            {
+                errorMessage += $" Inner exception: {ex.InnerException.Message}";
+            }
+        }
+    }
+
+    private async Task SubmitForm()
+    {
+        // Save car details to the database
+
+        if (car == null)
+        {
+            errorMessage = "Error registering car";
+        }
+        else
+        {
+            car.OwnerEmail = user.Email;
+            car.Status = "drop-off";
+            car.AssignedTo = car.AssignedTo ?? currentUserEmail;
+            await UserService.RegisterCarAsync(car);
+            await JS.InvokeVoidAsync("alert", "Car registered successfully!");
+            ClearUserDetails();
+        }
+    }
+
+    private void ClearUserDetails()
+    {
+        userModel = new ApplicationUser();
+        userName = "";
+        errorMessage = "";
+        ClearCarDetails();
+    }
+
+    private void ClearCarDetails()
+    {
+        car = new Car();
+        carModel = "";
+        carFound = false;
+        errorMessage = "";
+    }
+}

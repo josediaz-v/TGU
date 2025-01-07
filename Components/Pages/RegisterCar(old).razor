@@ -1,0 +1,83 @@
+﻿@page "/RegisterCarOld"
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.EntityFrameworkCore
+@using TGU.Data
+@inject UserService UserService
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
+
+<h3>Search User by Email</h3>
+
+<EditForm Model="@userModel" method="post" OnValidSubmit="SearchUser" FormName="UserSearchForm">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="mb-3">
+        <label for="email" class="form-label">Email:</label>
+        <InputText @bind-Value="userModel.Email"></InputText>
+
+        <button type="submit" class="btn btn-primary">Search</button>
+    </div>
+</EditForm>
+
+@if (user != null)
+{
+    <div class="mt-3">
+        <h5>User Found:</h5>
+        <p><strong>Name:</strong> @user.FirstName</p> <!-- Display user's name (or use FullName) -->
+        <p><strong>Email:</strong> @user.Email</p>
+    </div>
+}
+@*else if (errorMessage != null)
+{
+    <div class="mt-3 text-danger">
+        <p>@errorMessage</p>
+    </div>
+}*@
+<div class="mt-3 text-danger">
+    <p>@errorMessage</p>
+</div>
+
+@code {
+
+    //public class UserSearchModel
+    //{
+    //    public string Email { get; set; }
+    //}
+    public ApplicationUser userModel { get; set; } = new();
+
+    //public UserSearchModel searchModel = new UserSearchModel();
+    public ApplicationUser user;
+    //ApplicationUser user = new ApplicationUser();
+    private string errorMessage;
+
+    private async Task SearchUser()
+    {
+        //errorMessage = userEmail;
+        //searchModel.Email = "diaz.vargas.jose@gmail.com";
+        if (!string.IsNullOrEmpty(userModel.Email))
+        {
+            try
+            {
+                user = await UserService.GetUserByEmailAsync(userModel.Email);
+
+                if (user == null)
+                {
+                    errorMessage = $"User not found with email: {userModel.Email}";
+                }
+                else
+                {
+                    errorMessage = null;
+                }
+            }
+            catch (Exception ex)
+            {
+                errorMessage = $"Error occurred: {ex.Message}";
+            }
+        }
+        else
+        {
+            errorMessage = "Please provide an email.";
+        }
+    }
+}

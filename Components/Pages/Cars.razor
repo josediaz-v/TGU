@@ -1,0 +1,86 @@
+﻿@page "/Cars"
+@using TGU.Data
+
+@inject UserService UserService
+
+<h3>Cars</h3>
+
+@if (cars == null)
+{
+    <p>Loading...</p>
+}
+else if (!cars.Any())
+{
+    <p>No cars available.</p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>VIN</th>
+                <th>Owner Full Name</th>
+                <th>Phone Number</th>
+                <th>Email</th>
+                <th>Plate</th>
+                <th>Make</th>
+                <th>Model</th>
+                <th>Year</th>
+                <th>Assigned To</th>
+                <th>Car Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var car in cars)
+            {
+                <tr>
+                    <td>@car.Vin</td>
+                    <td>@GetOwnerFullName(car.OwnerEmail)</td>
+                    <td>@GetOwnerPhoneNumber(car.OwnerEmail)</td>
+                    <td>@car.OwnerEmail</td>
+                    <td>@car.Plate</td>
+                    <td>@car.Make</td>
+                    <td>@car.Model</td>
+                    <td>@car.Year</td>
+                    <td>@GetMechanicFullName(car.AssignedTo)</td>
+                    <td>@car.Status</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<Car> cars;
+    private List<ApplicationUser> users;
+
+    protected override async Task OnInitializedAsync()
+    {
+        cars = await UserService.GetAllCarsAsync();
+        users = await UserService.GetAllUsersAsync();
+    }
+
+    private string GetOwnerFullName(string userEmail)
+    {
+        var userFullName = "";
+        var user = users.FirstOrDefault(u => u.Email == userEmail);
+        userFullName = user?.FirstName + " " + user?.LastName;
+        return userFullName;
+    }
+
+    private string GetOwnerPhoneNumber(string userEmail)
+    {
+        var userPhoneNumber = "";
+        var user = users.FirstOrDefault(u => u.Email == userEmail);
+        userPhoneNumber = user?.PhoneNumber;
+        return userPhoneNumber;
+    }
+
+    private string GetMechanicFullName(string mechanicEmail)
+    {
+        var mechanicFullName = "";
+        var user = users.FirstOrDefault(u => u.Email == mechanicEmail);
+        mechanicFullName = user?.FirstName + " " + user?.LastName;
+        return mechanicFullName;
+    }
+}
