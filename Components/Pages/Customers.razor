@@ -4,6 +4,8 @@
 @inject UserService UserService
 @attribute [Authorize(Roles = "Admin")]
 
+<PageTitle>Customers</PageTitle>
+
 <h3>Customers</h3>
 
 @if (customers == null)

@@ -30,5 +30,6 @@ namespace TGU.Data
         public int? Cylinders { get; set; }
         public string Status { get; set; } = string.Empty;
         public string AssignedTo { get; set; }
+        public List<string> PictureUrls { get; set; } = new List<string>();
     }
 }

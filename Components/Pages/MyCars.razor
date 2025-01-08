@@ -5,6 +5,8 @@
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @attribute [Authorize(Roles = "Customer")]
 
+<PageTitle>My Cars</PageTitle>
+
 <h3>Cars</h3>
 
 @if (cars == null)
@@ -33,7 +35,7 @@ else
             @foreach (var car in cars)
             {
                 <tr>
-                    <td>@car.Vin</td>
+                    <td><NavLink href="@($"/CarDetails/{car.Vin}")">@car.Vin</NavLink></td>
                     <td>@car.Plate</td>
                     <td>@car.Make</td>
                     <td>@car.Model</td>

@@ -1,13 +1,16 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Components.Forms;
+using Microsoft.EntityFrameworkCore;
 using TGU.Data;
 
 public class UserService
 {
     private readonly ApplicationDbContext _context;
+    private readonly IWebHostEnvironment _environment;
 
-    public UserService(ApplicationDbContext context)
+    public UserService(ApplicationDbContext context, IWebHostEnvironment environment)
     {
         _context = context;
+        _environment = environment;
     }
 
     public async Task<List<ApplicationUser>> GetAllUsersAsync()
@@ -38,7 +41,7 @@ public class UserService
         return user;
     }
 
-    public async Task<String> GetUserPermissionByEmailAsync(string email)
+    public async Task<string> GetUserPermissionByEmailAsync(string email)
     {
         var user = await _context.Users
             .Where(u => EF.Functions.Like(u.Email, email)) // Case-insensitive search using LIKE
@@ -57,7 +60,7 @@ public class UserService
         return user;
     }
 
-    public async Task<Boolean> CheckUserPhoneAsync(string phone)
+    public async Task<bool> CheckUserPhoneAsync(string phone)
     {
         var phoneFound = false;
         var user = await _context.Users
@@ -104,9 +107,44 @@ public class UserService
     public async Task<Car> GetCarByVinAsync(string vin)
     {
         var car = await _context.Cars
-            .Where(c => EF.Functions.Like(c.Vin, vin)).
-            FirstOrDefaultAsync();
+            .Where(c => EF.Functions.Like(c.Vin, vin))
+            .FirstOrDefaultAsync();
 
         return car;
+    }
+
+    public async Task<string> UploadCarPictureAsync(IBrowserFile file, string vin)
+    {
+        var car = await _context.Cars.FirstOrDefaultAsync(c => c.Vin == vin);
+        if (car == null)
+        {
+            throw new Exception("Car not found");
+        }
+
+        var uploadsFolder = Path.Combine(_environment.WebRootPath, "uploads");
+        if (!Directory.Exists(uploadsFolder))
+        {
+            Directory.CreateDirectory(uploadsFolder);
+        }
+
+        var uniqueFileName = Guid.NewGuid().ToString() + "_" + file.Name;
+        var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+
+        using (var fileStream = new FileStream(filePath, FileMode.Create))
+        {
+            await file.OpenReadStream().CopyToAsync(fileStream);
+        }
+
+        car.PictureUrls.Add("/uploads/" + uniqueFileName);
+        _context.Cars.Update(car);
+        await _context.SaveChangesAsync();
+
+        return "/uploads/" + uniqueFileName;
+    }
+
+    public async Task UpdateCarAsync(Car car)
+    {
+        _context.Cars.Update(car);
+        await _context.SaveChangesAsync();
     }
 }

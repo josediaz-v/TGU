@@ -44,6 +44,11 @@ main {
     .top-row ::deep a, .top-row ::deep .btn-link {
         margin-left: 0;
     }
+
+    .car-pictures ul {
+        display: grid;
+        grid-template-columns: 1fr;
+    }
 }
 
 @media (min-width: 641px) {

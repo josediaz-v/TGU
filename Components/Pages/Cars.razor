@@ -3,14 +3,22 @@
 @using TGU.Data
 @inject UserService UserService
 @attribute [Authorize(Roles = "Admin, Mechanic")]
+@rendermode InteractiveServer
 
-<h3>Cars</h3>
+<PageTitle>Registered Cars</PageTitle>
 
-@if (cars == null)
+<h3>Registered Cars</h3>
+
+<div class="input-group mb-3">
+    <input type="text" @bind="searchTerm" placeholder="Search by VIN, Plate, Make, or Model" class="form-control" />
+    <button class="btn btn-primary" @onclick="FilterCars">Search</button>
+</div>
+
+@if (filteredCars == null)
 {
     <p>Loading...</p>
 }
-else if (!cars.Any())
+else if (!filteredCars.Any())
 {
     <p>No cars available.</p>
 }
@@ -20,30 +28,22 @@ else
         <thead>
             <tr>
                 <th>VIN</th>
-                @*<th>Owner Full Name</th>
-                <th>Phone Number</th>
-                <th>Email</th>*@
                 <th>Plate</th>
                 <th>Make</th>
                 <th>Model</th>
-                <th>Year</th>
                 <th>Assigned To</th>
                 <th>Car Status</th>
             </tr>
         </thead>
         <tbody>
-            @foreach (var car in cars)
+            @foreach (var car in filteredCars)
             {
                 <tr>
                     <td><NavLink href="@($"/CarDetails/{car.Vin}")">@car.Vin</NavLink></td>
-                    @*<td>@GetOwnerFullName(car.OwnerEmail)</td>
-                    <td>@GetOwnerPhoneNumber(car.OwnerEmail)</td>
-                    <td>@car.OwnerEmail</td>*@
                     <td>@car.Plate</td>
                     <td>@car.Make</td>
                     <td>@car.Model</td>
-                    <td>@car.Year</td>
-                    <td>@GetMechanicFullName(car.AssignedTo)</td>
+                    <td>@GetUserFullName(car.AssignedTo)</td>
                     <td>@car.Status</td>
                 </tr>
             }
@@ -53,35 +53,45 @@ else
 
 @code {
     private List<Car> cars;
+    private List<Car> filteredCars;
     private List<ApplicationUser> users;
+    private string searchTerm = "";
 
     protected override async Task OnInitializedAsync()
     {
+        // Fetch the data from the UserService
         cars = await UserService.GetAllCarsAsync();
+        filteredCars = cars;  // Initially show all cars
         users = await UserService.GetAllUsersAsync();
     }
 
-    private string GetOwnerFullName(string userEmail)
+    // This method will be called when the "Search" button is clicked
+    private void FilterCars()
+    {
+        // Filtering the cars based on the searchTerm
+        if (string.IsNullOrEmpty(searchTerm))
+        {
+            filteredCars = cars; // Show all cars if search term is empty
+        }
+        else
+        {
+            filteredCars = cars
+                .Where(car =>
+                    car.Vin.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                    car.Plate.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                    car.Make.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                    car.Model.Contains(searchTerm, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+        }
+
+        StateHasChanged(); // Ensure the component re-renders after filtering
+    }
+
+    private string GetUserFullName(string userEmail)
     {
         var userFullName = "";
         var user = users.FirstOrDefault(u => u.Email == userEmail);
         userFullName = user?.FirstName + " " + user?.LastName;
         return userFullName;
-    }
-
-    private string GetOwnerPhoneNumber(string userEmail)
-    {
-        var userPhoneNumber = "";
-        var user = users.FirstOrDefault(u => u.Email == userEmail);
-        userPhoneNumber = user?.PhoneNumber;
-        return userPhoneNumber;
-    }
-
-    private string GetMechanicFullName(string mechanicEmail)
-    {
-        var mechanicFullName = "";
-        var user = users.FirstOrDefault(u => u.Email == mechanicEmail);
-        mechanicFullName = user?.FirstName + " " + user?.LastName;
-        return mechanicFullName;
     }
 }

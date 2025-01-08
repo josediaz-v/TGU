@@ -1,10 +1,13 @@
 ﻿@page "/CarDetails/{vin}"
 @using Microsoft.AspNetCore.Authorization
 @using TGU.Data
+@using Microsoft.AspNetCore.Components.Forms
 @inject UserService UserService
 @inject AuthenticationStateProvider AuthenticationStateProvider
-@attribute [Authorize(Roles = "Admin, Mechanic")]
+@inject IJSRuntime JSRuntime
 @rendermode InteractiveServer
+
+<PageTitle>Car Details</PageTitle>
 
 <h3>Car Details</h3>
 
@@ -16,7 +19,7 @@ else
 {
     <div>
         <p><strong>VIN:</strong> @car.Vin</p>
-        <p><strong>Owner Email:</strong> @car.OwnerEmail</p>
+        <p><strong>Owner Email:</strong> @GetUserFullName(@car.OwnerEmail)</p>
         <p><strong>Plate:</strong> @car.Plate</p>
         <p><strong>Make:</strong> @car.Make</p>
         <p><strong>Model:</strong> @car.Model</p>
@@ -38,9 +41,45 @@ else
                 @car.Status
             }
         </p>
-        <p><strong>Assigned To:</strong> @GetMechanicFullName(car.AssignedTo)</p>
+        <p><strong>Assigned To:</strong> @GetUserFullName(car.AssignedTo)</p>
+        <p><strong>Pictures:</strong></p>
+        <div class="car-pictures">
+            <ul>
+                @foreach (var pictureUrl in car.PictureUrls)
+                {
+                    <li>
+                        <img src="@pictureUrl" alt="Car Picture" width="200" @onclick="() => OpenModal(pictureUrl)" />
+                        @if (currentUserPermission == "Admin" || car.AssignedTo == currentUserEmail)
+                        {
+                            <button class="btn-remove" @onclick="() => ConfirmRemovePicture(pictureUrl)">x</button>
+                        }
+                    </li>
+                }
+            </ul>
+            @if (currentUserPermission == "Admin" || car.AssignedTo == currentUserEmail)
+            {
+                <InputFile OnChange="UploadPicture" />
+            }
+        </div>
     </div>
 }
+
+<!-- Modal -->
+<div id="pictureModal" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Car Picture</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close" @onclick="CloseModal">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <img id="modalImage" src="" alt="Car Picture" class="img-fluid" />
+            </div>
+        </div>
+    </div>
+</div>
 
 @code {
     [Parameter]
@@ -64,7 +103,7 @@ else
         users = await UserService.GetAllUsersAsync();
     }
 
-    private string GetMechanicFullName(string mechanicEmail)
+    private string GetUserFullName(string mechanicEmail)
     {
         var mechanicFullName = "";
         var user = users.FirstOrDefault(u => u.Email == mechanicEmail);
@@ -76,5 +115,38 @@ else
     {
         car.Status = newStatus;
         await UserService.UpdateCarStatusAsync(car);
+    }
+
+    private async Task UploadPicture(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+        await UserService.UploadCarPictureAsync(file, vin);
+        car = await UserService.GetCarByVinAsync(vin); // Refresh car details
+    }
+
+    private async Task ConfirmRemovePicture(string pictureUrl)
+    {
+        var confirmed = await JSRuntime.InvokeAsync<bool>("confirmRemovePicture");
+        if (confirmed)
+        {
+            await RemovePicture(pictureUrl);
+        }
+    }
+
+    private async Task RemovePicture(string pictureUrl)
+    {
+        car.PictureUrls.Remove(pictureUrl);
+        await UserService.UpdateCarAsync(car);
+        car = await UserService.GetCarByVinAsync(vin); // Refresh car details
+    }
+
+    private async Task OpenModal(string pictureUrl)
+    {
+        await JSRuntime.InvokeVoidAsync("openModal", pictureUrl);
+    }
+
+    private async Task CloseModal()
+    {
+        await JSRuntime.InvokeVoidAsync("closeModal");
     }
 }

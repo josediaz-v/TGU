@@ -9,7 +9,9 @@
 @attribute [Authorize(Roles = "Admin, Mechanic")]
 @rendermode InteractiveServer
 
-<h3>Search User by Email</h3>
+<PageTitle>Register Car</PageTitle>
+
+<h3>Register Car</h3>
 <EditForm Model="@userModel" method="post" OnValidSubmit="SearchUser" FormName="UserSearchForm">
     <DataAnnotationsValidator />
     <ValidationSummary />
@@ -33,7 +35,7 @@
     <EditForm Model="@userModel" method="post" OnValidSubmit="FetchCarData" FormName="CarSearchForm">
         <fieldset class="mb-3">
             <legend>Car Model</legend>
-            <input id="carModel" type="text" @bind="carModel" placeholder="Enter car model" />
+            <input id="carModel" type="text" @bind="carModel" placeholder="Enter car model" required />
             <!-- Button to Fetch Car Info -->
             <button type="submit" class="btn btn-primary">Get Car Info</button>
         </fieldset>
@@ -72,11 +74,11 @@
             <label>Transmission:</label>
             <label class="radio">
                 <input type="radio" value="Manual" name="transmission"
-                       @onchange="(e) => car.Transmission = e.Value.ToString()" id="transmission" />Manual
+                @onchange="(e) => car.Transmission = e.Value.ToString()" id="transmission" />Manual
             </label>
             <label class="radio">
                 <input type="radio" value="Automatic" name="transmission"
-                       @onchange="(e) => car.Transmission = e.Value.ToString()" id="transmission" />Auto
+                @onchange="(e) => car.Transmission = e.Value.ToString()" id="transmission" />Auto
             </label>
             <ValidationMessage For="@(() => car.Transmission)" />
 
@@ -153,6 +155,8 @@
 
                 if (user == null)
                 {
+                    ClearUserDetails();
+                    ClearCarDetails();
                     errorMessage = $"User not found with phone number: {userModel.PhoneNumber}";
                 }
                 else
@@ -189,6 +193,8 @@
         }
         else
         {
+            ClearUserDetails();
+            ClearCarDetails();
             errorMessage = "Please provide an email or a phone number.";
         }
     }
@@ -200,7 +206,7 @@
         try
         {
             var url =
-            $"https://api.api-ninjas.com/v1/cars?limit=1&model={carModel}&X-Api-Key=Q1SDa2NmJnkTjhhckFMaBA==i0Wiz2athUnCsjOV"; //
+            $"https://api.api-ninjas.com/v1/cars?model={carModel}&X-Api-Key=Q1SDa2NmJnkTjhhckFMaBA==i0Wiz2athUnCsjOV"; //
             @* Use a secure way to handle the API key *@
             cars = await httpClient.GetFromJsonAsync<List<Car>>(url);
             if (cars == null || !cars.Any())
